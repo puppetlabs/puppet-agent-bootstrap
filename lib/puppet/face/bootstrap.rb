@@ -51,6 +51,23 @@ Puppet::Face.define(:bootstrap, '0.1.0') do
     end
   end
 
+  action(:purge) do
+    summary "Purge all agent SSL files"
+    when_invoked do |opts|
+      Puppet.notice("Purging CA CRL")
+      Puppet::SSL::CertificateRevocationList.indirection.destroy('ca')
+
+      Puppet.notice("Purging agent certificate")
+      Puppet::SSL::Certificate.indirection.destroy(Puppet[:certname])
+      Puppet.notice("Purging agent certificate request")
+      Puppet::SSL::CertificateRequest.indirection.destroy(Puppet[:certname])
+      Puppet.notice("Purging agent key pair")
+      Puppet::SSL::Key.indirection.destroy(Puppet[:certname])
+
+      nil
+    end
+  end
+
   action(:verify) do
     summary "Verify that the Puppet agent has a signed certificate"
 
