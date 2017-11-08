@@ -7,5 +7,6 @@
   "source": "https://github.com/puppetlabs/puppet-agent-bootstrap",
   "project_page": "https://github.com/puppetlabs/puppet-agent-bootstrap",
   "issues_url": "https://tickets.puppetlabs.com/browse/MODULES",
-  "description": "Provides the SSL bootstrap app for generating Puppet ssl certificate requests and validating them."
+  "description": "Provides the SSL bootstrap app for generating Puppet ssl certificate requests and validating them.",
+  "dependencies": []
 }
