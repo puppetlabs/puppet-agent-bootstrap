@@ -8,7 +8,7 @@ module PuppetX
         if !hostcert.nil?
           Puppet.notice "Found a certificate for #{Puppet[:certname]}"
         else
-          Puppet.error "No signed certificate found for #{Puppet[:certname]}"
+          Puppet.err "No signed certificate found for #{Puppet[:certname]}"
           exit(1)
         end
       end
@@ -17,7 +17,7 @@ module PuppetX
         if hostcert.content.check_private_key(hostkey.content)
           Puppet.notice "Private key matches certificate"
         else
-          Puppet.error "Signed certificate does not match host private key"
+          Puppet.err "Signed certificate does not match host private key"
           exit(1)
         end
       end
@@ -32,6 +32,38 @@ module PuppetX
         Puppet.err "Unable to reach Puppet master: #{e.message}"
         exit(1)
       end
+
+      def generate_csr
+        Puppet.settings.use(:main, :ssl, :agent)
+        name = Puppet[:certname]
+        cert_provider = Puppet::X509::CertProvider.new
+        key = cert_provider.load_private_key(name)
+        unless key
+          Puppet.info _("Creating a new RSA SSL key for %{name}") % { name: name }
+          key = OpenSSL::PKey::RSA.new(Puppet[:keylength].to_i)
+          cert_provider.save_private_key(name, key)
+        end
+        csr = cert_provider.create_request(name, key)
+        cert_provider.save_request(name, csr)
+      end
+
+      def purge_certs
+        paths = {
+          'local CA certificate' => Puppet[:localcacert],
+          'local CRL' => Puppet[:hostcrl],
+          'private key' => Puppet[:hostprivkey],
+          'public key'  => Puppet[:hostpubkey],
+          'certificate request' => File.join(Puppet[:requestdir], "#{Puppet[:certname]}.pem"),
+          'certificate' => Puppet[:hostcert],
+          'private key password file' => Puppet[:passfile]
+        }
+        paths.each_pair do |label, path|
+          if Puppet::FileSystem.exist?(path)
+            Puppet::FileSystem.unlink(path)
+            Puppet.notice _("Removed %{label} %{path}") % { label: label, path: path }
+          end
+        end
+      end
     end
   end
 end
@@ -44,25 +76,38 @@ Puppet::Face.define(:bootstrap, '0.1.0') do
     summary "Initialize the agent key pair and save a CSR"
 
     when_invoked do |opts|
-      Puppet::SSL::Oids.register_puppet_oids
-      Puppet::SSL::Oids.load_custom_oid_file(Puppet[:trusted_oid_mapping_file])
+      if Gem::Version.new(Puppet.version) > Gem::Version.new('6.0')
+        extend PuppetX::Puppetlabs::Bootstrap
+        generate_csr
+      else
+        Puppet::SSL::Oids.register_puppet_oids
+        Puppet::SSL::Oids.load_custom_oid_file(Puppet[:trusted_oid_mapping_file])
+        Puppet[:localcacert]
+        Puppet[:hostcrl]
 
-      Puppet::SSL::Host.localhost
+        Puppet::SSL::Host.localhost
+      end
     end
   end
 
   action(:purge) do
     summary "Purge all agent SSL files"
     when_invoked do |opts|
-      Puppet.notice("Purging CA CRL")
-      Puppet::SSL::CertificateRevocationList.indirection.destroy('ca')
 
-      Puppet.notice("Purging agent certificate")
-      Puppet::SSL::Certificate.indirection.destroy(Puppet[:certname])
-      Puppet.notice("Purging agent certificate request")
-      Puppet::SSL::CertificateRequest.indirection.destroy(Puppet[:certname])
-      Puppet.notice("Purging agent key pair")
-      Puppet::SSL::Key.indirection.destroy(Puppet[:certname])
+      if Gem::Version.new(Puppet.version) > Gem::Version.new('6.0')
+        extend PuppetX::Puppetlabs::Bootstrap
+        purge_certs
+      else
+        Puppet.notice("Purging CA CRL")
+        Puppet::SSL::CertificateRevocationList.indirection.destroy('ca')
+
+        Puppet.notice("Purging agent certificate")
+        Puppet::SSL::Certificate.indirection.destroy(Puppet[:certname])
+        Puppet.notice("Purging agent certificate request")
+        Puppet::SSL::CertificateRequest.indirection.destroy(Puppet[:certname])
+        Puppet.notice("Purging agent key pair")
+        Puppet::SSL::Key.indirection.destroy(Puppet[:certname])
+      end
 
       nil
     end
