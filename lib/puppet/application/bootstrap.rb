@@ -12,7 +12,8 @@ class Puppet::Application::Bootstrap < Puppet::Application::FaceBase
 
   def setup
     super
-    Puppet::SSL::Host.ca_location = :none
+
+    Puppet::SSL::Host.ca_location = :none if Gem::Version.new(Puppet.version) < Gem::Version.new('6.0')
     Puppet.settings.preferred_run_mode = "agent"
     Puppet.settings.use(:ssl)
   end
