@@ -76,15 +76,14 @@ Puppet::Face.define(:bootstrap, '0.1.0') do
     summary "Initialize the agent key pair and save a CSR"
 
     when_invoked do |opts|
+      Puppet::SSL::Oids.register_puppet_oids
+      Puppet::SSL::Oids.load_custom_oid_file(Puppet[:trusted_oid_mapping_file])
       if Gem::Version.new(Puppet.version) > Gem::Version.new('6.0')
         extend PuppetX::Puppetlabs::Bootstrap
         generate_csr
       else
-        Puppet::SSL::Oids.register_puppet_oids
-        Puppet::SSL::Oids.load_custom_oid_file(Puppet[:trusted_oid_mapping_file])
         Puppet[:localcacert]
         Puppet[:hostcrl]
-
         Puppet::SSL::Host.localhost
       end
     end
