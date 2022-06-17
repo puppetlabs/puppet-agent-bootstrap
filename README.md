@@ -3,6 +3,10 @@ Puppet Agent Bootstrap
 
 This is a Puppet App that provides the `puppet bootstrap` command used to generate and validate a Puppet Agent's certificate signing request that isn't being sent directly to a Puppet Server Certificate Authority. And example use case for this would be for generating a CSR that would be submitted to a service that can communicate with the CA and then validating the signed request when it was returned before proceeding with the rest of the agent configuration.
 
+> This module is maintained by Puppet and used by our OpsWorks integration, but we have no plans for future feature development. We will keep it working with current versions of Puppet, but new feature development will come from community contributions. It does not qualify for Puppet Support plans.
+>
+> [tier:maintenance-mode]
+
 ## Commands
 
 `puppet bootstrap purge`
