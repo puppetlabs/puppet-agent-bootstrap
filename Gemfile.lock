@@ -71,7 +71,7 @@ GEM
       json
     domain_name (0.5.20170404)
       unf (>= 0.0.5, < 1.0.0)
-    excon (0.57.1)
+    excon (0.71.0)
     facter (2.4.6)
     facterdb (0.3.11)
       facter
