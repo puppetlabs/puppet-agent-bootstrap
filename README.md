@@ -1,3 +1,10 @@
+| This module will no longer receive updates. |
+|---------------------------------------------|
+| ⚠️ As of Puppet 7.27 and 8.3, the built in `puppet ssl` command now supports bootstrapping an offline agent. Instead of this module, you should use `puppet ssl generate_request`. |
+
+
+
+
 Puppet Agent Bootstrap
 =======
 
